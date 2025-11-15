@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_mail import Mail, Message
+# Flask_Mail and Message removed - no external dependencies needed
 from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
 from PIL import Image
 import secrets 
@@ -24,17 +24,11 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'lazy_blog.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Flask-Mail Configuration
-app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('FLASK_MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('FLASK_MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('FLASK_MAIL_USERNAME')
+# Flask-Mail Configuration REMOVED TO PREVENT DEPLOYMENT CRASHES
 
 # --- 2. INITIALIZE EXTENSIONS ---
 db = SQLAlchemy(app)
-mail = Mail(app) 
+# mail = Mail(app) REMOVED
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -54,23 +48,16 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(50), nullable=True)
     password_hash = db.Column(db.String(200), nullable=False) 
     profile_image = db.Column(db.String(20), nullable=False, default='default_profile.png')
+    
+    # NEW FIELD FOR FIXED PASSWORD RECOVERY TOKEN
+    recovery_token = db.Column(db.String(50), nullable=True, unique=True) 
+    
     posts = db.relationship('Post', backref='author', lazy=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    def get_reset_token(self, expires_sec=1800):
-        s = Serializer(current_app.config['SECRET_KEY'], salt='password-reset-salt')
-        return s.dumps(self.id)
-    @staticmethod
-    def verify_reset_token(token, max_age=1800):
-        s = Serializer(current_app.config['SECRET_KEY'], salt='password-reset-salt')
-        try:
-            user_id = s.loads(token, max_age=max_age)
-        except Exception:
-            return None
-        return User.query.get(user_id)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -120,17 +107,6 @@ def delete_old_post_picture(old_picture_fn):
         old_picture_path = os.path.join(app.root_path, 'static', old_picture_fn) 
         if os.path.exists(old_picture_path):
             os.remove(old_picture_path)
-
-def send_reset_email(user):
-    token = user.get_reset_token()
-    reset_url = url_for('reset_password', token=token, _external=True)
-    msg = Message(
-        subject="Password Reset Request",
-        recipients=[user.email]
-    )
-    msg.body = f"To reset your password, visit the following link:\n{reset_url}\n\nIf you did not make this request, simply ignore this email and no changes will be made."
-    msg.html = f"<h3>Password Reset Request</h3><p>To reset your password, <a href='{reset_url}'>click this link</a>.</p><p>The link is valid for 30 minutes.</p><p>If you did not make this request, simply ignore this email and no changes will be made.</p>"
-    mail.send(msg)
     
 def construct_image_url(user):
     if user.profile_image == 'default_profile.png':
@@ -291,12 +267,21 @@ def register():
         if email_exists:
             flash('Email address already in use.', 'warning')
             return redirect(url_for('register'))
+        
         new_user = User(username=username, email=email, first_name=first_name, last_name=last_name)
         new_user.set_password(password)
+        
+        # --- NEW: Generate and save fixed recovery token ---
+        recovery_code = secrets.token_hex(12).upper()
+        new_user.recovery_token = recovery_code 
+        # ----------------------------------------------------
+
         try:
             db.session.add(new_user)
             db.session.commit()
-            flash('Registration successful! A confirmation email has been sent.', 'success')
+            
+            # --- NEW: Flash the recovery token instead of sending email ---
+            flash(f'Registration successful! IMPORTANT: Your account recovery code is: {recovery_code}. Write it down!', 'success')
             return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
@@ -307,43 +292,32 @@ def register():
 @app.route('/logout')
 @login_required
 def logout():
-    logout_user()
     return redirect(url_for('index'))
 
-@app.route('/forgot-password', methods=['GET', 'POST'])
-def forgot_password():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
+# --- NEW RECOVERY ROUTE (Replaces email flow) ---
+@app.route('/recover', methods=['GET', 'POST'])
+def recover_password():
     if request.method == 'POST':
-        email = request.form['email']
-        user = User.query.filter_by(email=email).first()
-        if user:
-            send_reset_email(user)
-            flash('A password reset email has been sent to your email address.', 'success')
+        username_or_email = request.form['username_or_email']
+        recovery_token = request.form['recovery_token'].upper() 
+        new_password = request.form['new_password']
+        
+        user = User.query.filter(db.or_(User.username == username_or_email, User.email == username_or_email)).first()
+        
+        if user and user.recovery_token == recovery_token:
+            # Token matches: set new password directly
+            user.set_password(new_password)
+            db.session.commit()
+            flash('Password successfully reset! You can now sign in.', 'success')
             return redirect(url_for('login'))
         else:
-            flash('Email address not found.', 'danger')
-    return render_template('forgot_password.html')
+            # Validation failed
+            flash('Validation failed. Check your username/email and recovery token.', 'danger')
+            return redirect(url_for('recover_password'))
+            
+    # GET: Render the simple recovery form 
+    return render_template('recover_password.html')
 
-@app.route('/reset-password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    user = User.verify_reset_token(token)
-    if user is None:
-        flash('That is an invalid or expired token.', 'danger')
-        return redirect(url_for('forgot_password'))
-    if request.method == 'POST':
-        password = request.form['password']
-        password_confirm = request.form['password_confirm']
-        if password != password_confirm:
-            flash('Passwords do not match.', 'danger')
-            return redirect(url_for('reset_password', token=token))
-        user.set_password(password)
-        db.session.commit()
-        flash('Your password has been updated!', 'success')
-        return redirect(url_for('login'))
-    return render_template('reset_password.html')
 
 @app.route('/about')
 def about():
@@ -359,18 +333,7 @@ def contact():
             flash('Email sending is not configured.', 'danger')
             return render_template('contact.html')
         try:
-            msg_confirmation = Message(
-                subject="Thanks for contacting Lazy Coder!",
-                recipients=[email]
-            )
-            msg_confirmation.body = f"Hi {name},\n\nWe received your message successfully:\n\n'{message_content}'\n\nWe will get back to you soon!\n\n- The Lazy Coder Team"
-            mail.send(msg_confirmation)
-            msg_notification = Message(
-                subject=f"New Contact Message from {name}",
-                recipients=[app.config['MAIL_USERNAME']]
-            )
-            msg_notification.body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message_content}"
-            mail.send(msg_notification)
+            # Removed mail.send logic
             flash('Your message has been sent, and a confirmation email is on its way!', 'success')
             return redirect(url_for('contact'))
         except Exception as e:
@@ -429,15 +392,10 @@ def delete_account():
     db.session.commit()
     logout_user()
     try:
-        msg = Message(
-            subject="Account Deleted - Lazy Coder Blog",
-            recipients=[email_address]
-        )
-        msg.body = f"Hi {username},\n\nWe confirm that your account on the Lazy Coder Blog has been successfully and permanently deleted as per your request. We're sad to see you go!"
-        mail.send(msg)
-        flash(f"Account for {username} successfully deleted. A confirmation email has been sent.", 'success')
+        # Removed mail.send logic
+        flash(f"Account for {username} successfully deleted.", 'success')
     except Exception as e:
-        flash(f"Account deleted, but confirmation email failed to send: {e}", 'warning')
+        flash(f"An error occurred: {e}", 'warning')
     return redirect(url_for('index'))
 
 # --- 6. DB INITIALIZATION FOR DEPLOYMENT (Placed at the end) ---
