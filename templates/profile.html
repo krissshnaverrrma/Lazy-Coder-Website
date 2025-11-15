@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="profile-container">
+        <h2 class="page-title">My Profile</h2>
+
+        <div class="profile-header">
+            
+            <div class="profile-image-section">
+                <img src="{{ image_file }}" alt="{{ user.username }}'s Profile Picture" class="profile-picture">
+
+            </div>
+            
+            <div class="profile-details-section">
+                <h3>Profile Details</h3>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                
+                <a href="{{ url_for('edit_profile') }}" class="btn" style="margin-top: 1rem;">Edit Profile</a>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

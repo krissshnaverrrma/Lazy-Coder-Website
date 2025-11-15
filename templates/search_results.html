@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h2>Search Results for: "{{ query }}"</h2>
+    {% if results %}
+        <p>Found {{ results|length }} post(s) matching your query.</p>
+        {% for post in results %}
+            <article>
+                <h3><a href="{{ url_for('post', post_id=post.id) }}">{{ post.title }}</a></h3>
+                <p class="post-meta">By {{ post.author.username }} on {{ post.date_posted.strftime('%Y-%m-%d') }}</p>
+                <p>{{ post.content | truncate(200) }}</p>
+                <a href="{{ url_for('post', post_id=post.id) }}">Read more...</a>
+            </article>
+        {% endfor %}
+    {% else %}
+        <p>No results found matching "{{ query }}".</p>
+        <p>Try searching for a different keyword or check your spelling.</p>
+    {% endif %}
+{% endblock %}

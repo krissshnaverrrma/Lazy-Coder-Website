@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-main">
+    <h1 class="page-title">Create New Post</h1>
+    <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data" class="post-form">
+        <div class="form-group">
+            <label for="title" class="form-label">Title</label>
+            <input type="text" id="title" name="title" required class="form-input" placeholder="A catchy title for your blog post">
+        </div>
+        <div class="form-group">
+            <label for="image_file" class="form-label">Post Header Image (Optional)</label>
+            <input type="file" id="image_file" name="image_file" accept="image/*" class="form-file-input">
+            <p class="file-help-text">Max file size 2MB. Recommended aspect ratio: 16:9.</p>
+        </div>
+        <div class="form-group">
+            <label for="content" class="form-label">Content</label>
+            <textarea id="content" name="content" rows="12" required class="form-input form-textarea" placeholder="Start writing your amazing content here..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-dark btn-submit">
+            Publish Post
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="search-icon" aria-label="Search" onclick="openSearchModal()">
+        <i class="fas fa-search"></i>
+        <span>SEARCH</span>
+    </div>
+    <div id="search-modal" class="search-modal">
+        <form class="search-modal-form" action="{{ url_for('search') }}" method="GET">
+            <input type="text" name="q" placeholder="Type to search posts..." required autofocus>
+            <button type="button" class="search-modal-clear" onclick="closeSearchModal()">
+                <i class="fas fa-times"></i>
+            </button> 
+            <button type="submit" class="search-modal-btn"><i class="fas fa-search"></i></button>
+            <button type="button" class="search-modal-close" onclick="closeSearchModal()">X</button>
+        </form>
+    </div>
+    <div class="hero-section">
+        <canvas id="hero-canvas"></canvas>
+        <div class="hero-content">
+            <h2>Welcome to Lazy Coder!</h2>
+            <p>
+                Hey there, fellow coding enthusiasts and self-proclaimed lazy folks! 
+                Welcome to Lazy Coder, a blog dedicated to all things coding, 
+                productivity, and breaking free from the clutches of laziness.
+            </p>
+            <a href="{{ url_for('about') }}" class="btn">Continue reading...</a>
+        </div>
+    </div>
+    <h2 class="section-title">Trending Blog Posts</h2>
+    <div class="post-list">
+        {% for post in posts %}
+            <article class="post-card"> 
+                <div class="card-image-container">
+                    <img 
+                        src="{{ url_for('static', filename=post.image_file) }}" 
+                        alt="{{ post.title }}" 
+                        class="card-image"
+                        onerror="this.onerror=null;this.src='{{ url_for('static', filename='img/default_post_bg.png') }}';">
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">
+                        <a href="{{ url_for('post', post_id=post.id) }}">{{ post.title }}</a>
+                    </h3>
+                    <div class="card-meta">
+                        <span class="meta-category">AI, INTERNET</span> 
+                        <span class="meta-date">{{ post.date_posted.strftime('%B %d, %Y') }}</span>
+                        <span class="meta-author">BY {{ post.author.first_name }} {{ post.author.last_name }}</span>
+                    </div>
+                    <p class="card-excerpt">
+                        {{ post.content | truncate(200) }}
+                    </p>
+                    <div class="card-stats">
+                        <span>VIEWS (50)</span>
+                        <span>LIKES (25)</span>
+                        <span>DISLIKES (0)</span>
+                    </div>
+                </div>
+            </article>
+        {% else %}
+            <p>No posts yet! Be the first to write one.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

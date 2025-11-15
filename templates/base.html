@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lazy Coder</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/blog_post.css') }}"> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/all.min.css') }}">
+    
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/logo.jpg') }}">
+</head>
+<body>
+    <div class="wrapper">
+        <aside class="sidebar">  
+            <div class="sidebar-header">
+                <a href="{{ url_for('index') }}">
+                    <img src="{{ url_for('static', filename='img/logo.jpg') }}" alt="Lazy Coder Logo" class="sidebar-logo">
+                </a>
+                <h1><a href="{{ url_for('index') }}">Lazy Coder</a></h1>
+            </div> 
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Home</a></li>    
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('profile') }}">Profile</a></li>
+                        <li><a href="{{ url_for('create_post') }}">New Post</a></li>
+                        <li><a href="{{ url_for('logout') }}">Sign Out</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('login') }}">Sign In</a></li>
+                        <li><a href="{{ url_for('register') }}">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+                <h2 class="sidebar-heading">Categories</h2>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">All Blog Posts</a></li>
+                </ul>
+                <ul>
+                    <li><a href="{{ url_for('about') }}">About</a></li>
+                    <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="social-icons">
+                <a href="https://github.com/krissshnaverrrma" target="_blank" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                <a href="https://www.linkedin.com/in/krishna-verma-43aa85315/" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="https://www.instagram.com/krissssshnaverrrrrma/ " target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+              <a href="https://www.facebook.com/krissssshnaverrrrrma/ " target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>  
+            </div>
+        </aside>
+        <main class="main-content"> 
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/plexus.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script> 
+    <script src="https://cdn.tailwindcss.com"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+    <article class="about-page">
+        <img src="{{ url_for('static', filename='img/about-banner.png') }}" alt="Lazy Coder Banner" class="about-banner">
+        <h2>Welcome to Lazy Coder!</h2>
+        <p class="drop-cap">
+            <span class="drop-cap-letter">H</span>ey there, fellow coding enthusiasts and self-proclaimed lazy folks! 
+            Welcome to Lazy Coder, a blog dedicated to all things coding, productivity, 
+            and breaking free from the clutches of laziness.
+        </p>
+        <h3>Why Lazy Coder?</h3>
+        <p>
+            I'm a computer science student who believes that the best code is the code you don't have to write. 
+            This blog is my journey of exploring smart shortcuts, efficient tools, and powerful frameworks
+            that let us build amazing things with minimal effort.
+        </p>
+        <div class="two-column-section">
+            <div class="column">
+                <h4>What to Expect</h4>
+                <p>
+                    On this blog, you'll find treasure troves of tips, 
+                    tricks, and tutorials designed to help you become an 
+                    awesome and lazy (aka efficient) coder.
+                </p>
+            </div>
+            <div class="column">
+                <h4>Join the Lazy Coder Community</h4>
+                <p>
+                    Lazy Coder is more than just a blog; it's a 
+                    community of like-minded individuals. Engage with 
+                    us by sharing your thoughts, tips, and experiences.
+                </p>
+            </div>
+        </div>
+        <p>
+            Thank you for visiting Lazy Coder. Join us now and let's 
+            redefine what it means to be a lazy coder together!
+        </p>
+    </article>
+
+{% endblock %}

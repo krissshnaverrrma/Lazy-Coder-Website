@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+    <article class="about-page">
+        <div class="contact-image-container">
+            <img src="{{ url_for('static', filename='img/contact-mailbox.jpg') }}" alt="Red Mailbox" class="contact-image">
+        </div>
+        <h2 class="contact-heading" style="margin-top: 2rem;">Get in Touch.</h2>
+        <p class="contact-body-text drop-cap">
+            <span class="drop-cap-letter">W</span>e love hearing from our readers! Whether you have a question, a suggestion, or simply want to say hello, we're here to listen. Feel free to reach out to us using the contact information provided below.
+        </p>
+        <p class="contact-body-text">
+            We value your feedback and insights! If you have comments or suggestions specifically about a blog post, we encourage you to leave a comment directly on the respective article.
+        </p>
+        <p class="contact-body-text">
+            For personal inquiries, please use the contact form below. Thank you for your interest in Lazy Coder. We look forward to hearing from you and sharing this coding journey together!
+        </p>
+        <hr style="margin-top: 3rem;">
+        <div class="address-section">
+            <h4>Where to Find Us</h4>
+            <p>
+                <strong>Sanskar College of Engineering and Technology</strong><br>
+                <span>Hapur,</span><br>
+                <span>245101, UP</span>
+            </p>
+        </div>
+        <h4 style="margin-bottom: 2rem;">Say Hello</h4>
+        <form class="contact-form-body" method="POST" action="{{ url_for('contact') }}">
+            <label for="name">Name</label>
+            <input type="text" name="name" id="name" placeholder="Your Name" required>
+            <label for="email">Email</label>
+            <input type="email" name="email" id="email" placeholder="Your Email" required>
+            <label for="website">Website</label>
+            <input type="url" name="website" id="website" placeholder="Your Website URL">
+            <label for="message">Your Message</label>
+            <textarea name="message" id="message" rows="6" placeholder="Your Message" required></textarea>
+            <button type="submit" class="btn-dark contact-submit">Send Message</button>
+        </form>
+    </article>
+{% endblock %}
