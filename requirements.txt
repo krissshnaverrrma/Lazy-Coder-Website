@@ -6,3 +6,4 @@ Flask-Mail
 itsdangerous
 Pillow
 gunicorn
+psycopg2-binary
