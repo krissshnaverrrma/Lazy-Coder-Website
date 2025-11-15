@@ -407,8 +407,3 @@ def app_context_scope():
 with app_context_scope():
     # Attempt to create tables if they do not exist (for fresh deployment)
     db.create_all()
-# --- END DB INITIALIZATION ---
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
