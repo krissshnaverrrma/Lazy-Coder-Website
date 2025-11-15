@@ -7,7 +7,9 @@
         <label for="password">Password</label>
         <input type="password" name="password" id="password" required>
         <button type="submit" class="btn-dark">Sign In</button>
-        <a href="{{ url_for('forgot_password') }}" class="btn-dark" style="margin-top: 1rem;">Forgot Password?</a>
+        
+        <a href="{{ url_for('recover_password') }}" class="btn-dark" style="margin-top: 1rem;">Forgot Password?</a>
+        
         <a href="{{ url_for('register') }}" class="btn-dark">Don't have an account? Sign Up</a>
     </form>
 {% endblock %}
