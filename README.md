@@ -2,81 +2,84 @@
 
 This is a full-featured blog application built with Flask, designed for easy content creation, management, and deployment. The application supports user authentication, image uploading, and a cloud-hosted relational database.
 
+**Live Demo:** [**https://lazy-coder-website.onrender.com/**](https://lazy-coder-website.onrender.com/)
+
 ## ✨ Features
 
-* **User Authentication:** Secure user registration, login, logout, and password reset functionality using Flask-Login and Flask-Mail.
-* **Database Persistence:** Configured for deployment using a persistent **PostgreSQL** database (via `DATABASE_URL` environment variable) with a fallback to local SQLite.
+* **User Authentication:** Secure user registration, login, and logout.
+* **Account Recovery:** "Forgot Password" system using a secure, question-based method (no email required).
+* **Database Persistence:** Configured for deployment using a persistent **PostgreSQL** database (via `DATABASE_URL`) with a fallback to local SQLite.
 * **CRUD Operations:** Full Create, Read, Update, and Delete (CRUD) capability for blog posts.
 * **Image Management:**
     * Profile picture uploads and dynamic resizing using Pillow.
     * Blog post header image uploads with dedicated storage and cleanup logic.
     * Associated images are deleted from storage when a post or account is removed.
-* **Responsive UI:** Clean, standard CSS design optimized for readability and card layout.
+* **Full-Text Search:** A search bar to find posts by keywords in the title or content.
+
+## 🛠️ Tech Stack
+
+* **Backend:** [**Flask**](https://flask.palletsprojects.com/) & [**Gunicorn**](https://gunicorn.org/)
+* **Database:** [**PostgreSQL**](https://www.postgresql.org/) (Production) / [**SQLite**](https://www.sqlite.org/index.html) (Local)
+* **ORM:** [**SQLAlchemy**](https://www.sqlalchemy.org/)
+* **Image Handling:** [**Pillow**](https://python-pillow.org/)
+* **PostgreSQL Driver:** [**psycopg2-binary**](https://pypi.org/project/psycopg2-binary/)
 
 ## 🚀 Deployment
 
-This project is structured for easy deployment to platforms like Render or Heroku.
-
-### Prerequisites
-
-1.  **Python Environment:** Python 3.9+ and a virtual environment (`venv`).
-2.  **External Database:** A persistent PostgreSQL database (required for cloud hosting).
-3.  **App Password:** An App Password must be generated if using Gmail for `FLASK_MAIL_PASSWORD`.
+This project is structured for easy deployment to platforms like Render.
 
 ### Local Setup
 
 1.  Clone the repository:
     ```bash
-    git clone [YOUR_REPO_URL]
+    git clone [https://github.com/krisshnaverrrma/Lazy-Coder-Website.git](https://github.com/krisshnaverrrma/Lazy-Coder-Website.git)
     cd Lazy-Coder-Website
     ```
 2.  Create and activate a virtual environment:
     ```bash
+    # On Windows
     python -m venv venv
     .\venv\Scripts\activate
+    
+    # On macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
     ```
 3.  Install dependencies:
     ```bash
     pip install -r requirements.txt
     ```
 4.  Set up environment variables (create a `.env` file):
-    ```
+    ```.env
     SECRET_KEY="YOUR_VERY_LONG_SECRET_KEY"
-    FLASK_MAIL_USERNAME="your.email@gmail.com"
-    FLASK_MAIL_PASSWORD="your_app_password"
-    # Optional: DATABASE_URL for local testing with external DB
+    # The DATABASE_URL is optional, it will default to SQLite
+    # DATABASE_URL="sqlite:///lazy_blog.db"
     ```
-5.  Initialize the database tables (this must be run once):
+5.  Run the application:
     ```bash
-    # The automatic db.create_all() will run on first execution
-    python app.py
+    flask run
     ```
+    Open `http://127.0.0.1:5000` in your browser.
 
-### Cloud Deployment (Render/Heroku/Vercel)
+### Cloud Deployment (Render)
 
-The application is configured to run using Gunicorn and read the database connection string from the hosting environment.
-
-1.  **Set Environment Variables:** Configure the following four required variables in the host dashboard:
-    * `SECRET_KEY`
-    * `FLASK_MAIL_USERNAME`
-    * `FLASK_MAIL_PASSWORD`
-    * **`DATABASE_URL`** (The full PostgreSQL connection string).
-2.  **Procfile:** The host will execute the start command defined in the `Procfile`: `web: gunicorn app:app`
+1.  **Set Environment Variables** in the Render dashboard:
+    * `SECRET_KEY`: A new, strong random string.
+    * `DATABASE_URL`: The **Internal Connection String** from your Render PostgreSQL database.
+2.  **Set Commands** in the Render dashboard:
+    * **Build Command:** `pip install -r requirements.txt`
+    * **Start Command:** `gunicorn app:app`
 
 ---
 
-## 2. 🐍 `requirements.txt` (Final Dependencies)
-
+## 🐍 `requirements.txt` (Final Dependencies)
 This file lists all the libraries necessary for both development and production.
-
 ```text:requirements.txt
 Flask
 Flask-SQLAlchemy
 Flask-Login
 python-dotenv
-Flask-Mail
 itsdangerous
 Pillow
 gunicorn
-psycopg2-binary  # PostgreSQL driver
-```eof
+psycopg2-binary

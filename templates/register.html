@@ -10,7 +10,6 @@
         <input type="text" name="last_name" id="last_name">
         <label for="email">Email</label>
         <input type="email" name="email" id="email" required>
-        
         <label for="security_question">Security Question</label>
         <select name="security_question" id="security_question" required>
             <option value="">-- Select a Question --</option>
@@ -18,14 +17,12 @@
             <option value="What was the name of your first pet?">What was the name of your first pet?</option>
             <option value="What is the city where you were born?">What is the city where you were born?</option>
         </select>
-        
         <label for="security_answer">Security Answer</label>
         <input type="text" name="security_answer" id="security_answer" required>
         <label for="password">Password</label>
         <input type="password" name="password" id="password" required>
         <label for="password_confirm">Password Confirmation</label>
         <input type="password" name="password_confirm" id="password_confirm" required>
-        
         <button type="submit" class="btn-dark">Sign Up</button>
         <a href="{{ url_for('login') }}" class="btn-dark" style="margin-top: 1rem;">
             Already have an account? Sign In
