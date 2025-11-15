@@ -24,7 +24,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'lazy_blog.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Flask-Mail Configuration REMOVED TO PREVENT DEPLOYMENT CRASHES
+# Flask-Mail Configuration REMOVED
 
 # --- 2. INITIALIZE EXTENSIONS ---
 db = SQLAlchemy(app)
