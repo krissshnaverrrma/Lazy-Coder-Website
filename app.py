@@ -5,6 +5,9 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+# Flask_Mail and Message removed - no external dependencies needed
+from itsdangerous.url_safe import URLSafeTimedSerializer as Serializer
+from PIL import Image
 import secrets 
 from werkzeug.utils import secure_filename
 from contextlib import contextmanager 
@@ -16,6 +19,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 
 # CRITICAL: Use the environment variable DATABASE_URL for PostgreSQL/Render 
+# and fall back to SQLite for local use.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'lazy_blog.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -24,6 +28,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- 2. INITIALIZE EXTENSIONS ---
 db = SQLAlchemy(app)
+# mail = Mail(app) REMOVED
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -44,9 +49,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(200), nullable=False) 
     profile_image = db.Column(db.String(20), nullable=False, default='default_profile.png')
     
-    # NEW FIELDS FOR SECURITY QUESTION RECOVERY
-    security_question = db.Column(db.String(120), nullable=True) 
-    security_answer_hash = db.Column(db.String(200), nullable=True) 
+    # NEW FIELD FOR FIXED PASSWORD RECOVERY TOKEN
+    recovery_token = db.Column(db.String(50), nullable=True, unique=True) 
     
     posts = db.relationship('Post', backref='author', lazy=True)
     
@@ -54,11 +58,6 @@ class User(UserMixin, db.Model):
         self.password_hash = generate_password_hash(password)
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-        
-    def set_security_answer(self, answer):
-        self.security_answer_hash = generate_password_hash(answer)
-    def check_security_answer(self, answer):
-        return check_password_hash(self.security_answer_hash, answer)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -69,7 +68,6 @@ class Post(db.Model):
     image_file = db.Column(db.String(200), nullable=True, default='img/default_post_bg.png') 
 
 # --- 4. HELPER FUNCTIONS ---
-# (Helper functions for image/profile/post deletion remain the same)
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     filename = secure_filename(form_picture.filename) 
@@ -256,8 +254,6 @@ def register():
         last_name = request.form['last_name']
         password = request.form['password']
         password_confirm = request.form['password_confirm']
-        
-        # 1. Validation Checks
         if password != password_confirm:
             flash('Passwords do not match.', 'danger')
             return redirect(url_for('register'))
@@ -269,34 +265,27 @@ def register():
         if email_exists:
             flash('Email address already in use.', 'warning')
             return redirect(url_for('register'))
-            
-        # 2. Capture Security Data
-        security_question = request.form['security_question']
-        security_answer = request.form['security_answer']
-
-        # 3. Create User & Hash Data
-        new_user = User(
-            username=username, 
-            email=email, 
-            first_name=first_name, 
-            last_name=last_name,
-            security_question=security_question # Save the question text
-        )
+        
+        new_user = User(username=username, email=email, first_name=first_name, last_name=last_name)
         new_user.set_password(password)
-        new_user.set_security_answer(security_answer) # Hash and save the answer
+        
+        # --- NEW: Generate and save fixed recovery token ---
+        recovery_code = secrets.token_hex(12).upper()
+        new_user.recovery_token = recovery_code 
+        # ----------------------------------------------------
 
         try:
             db.session.add(new_user)
             db.session.commit()
             
-            flash('Registration successful! Remember your security answer for recovery.', 'success')
+            # --- NEW: Flash the recovery token instead of sending email ---
+            flash(f'Registration successful! IMPORTANT: Your account recovery code is: {recovery_code}. Write it down!', 'success')
             return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
             flash(f'An error occurred: {e}', 'danger')
             return redirect(url_for('register'))
     else:
-        # GET request for register
         if current_user.is_authenticated:
             return redirect(url_for('index'))
         return render_template('register.html')
@@ -306,54 +295,29 @@ def register():
 def logout():
     return redirect(url_for('index'))
 
-# --- NEW RECOVERY ROUTE: Security Question Based ---
+# --- NEW RECOVERY ROUTE (Replaces email flow) ---
 @app.route('/recover', methods=['GET', 'POST'])
 def recover_password():
     if request.method == 'POST':
-        if 'action' in request.form:
-            action = request.form['action']
-            
-            # --- ACTION 1: FIND USER & DISPLAY QUESTION ---
-            if action == 'find_user':
-                username_or_email = request.form['username_or_email']
-                user = User.query.filter(db.or_(User.username == username_or_email, User.email == username_or_email)).first()
-                
-                if user and user.security_question:
-                    # Pass the user's ID and their question to the next form stage
-                    return render_template('recover_password.html', 
-                                           user_id=user.id, 
-                                           question=user.security_question,
-                                           stage='answer')
-                else:
-                    flash('User not found or security question not set.', 'danger')
-                    return redirect(url_for('recover_password'))
-            
-            # --- ACTION 2: VALIDATE ANSWER & RESET PASSWORD ---
-            elif action == 'reset_password':
-                user_id = request.form['user_id']
-                submitted_answer = request.form['submitted_answer']
-                new_password = request.form['new_password']
-                
-                user = User.query.get(user_id)
-                
-                if user and user.check_security_answer(submitted_answer):
-                    # Answer is correct: set new password
-                    user.set_password(new_password)
-                    db.session.commit()
-                    flash('Password successfully reset! You can now sign in.', 'success')
-                    return redirect(url_for('login'))
-                else:
-                    flash('Security answer is incorrect.', 'danger')
-                    # Go back to the initial form stage
-                    return redirect(url_for('recover_password'))
-                    
+        username_or_email = request.form['username_or_email']
+        recovery_token = request.form['recovery_token'].upper() 
+        new_password = request.form['new_password']
         
-        # Fallback for unexpected POST action
-        flash('Invalid recovery action.', 'danger')
-        return redirect(url_for('recover_password'))
+        user = User.query.filter(db.or_(User.username == username_or_email, User.email == username_or_email)).first()
+        
+        if user and user.recovery_token == recovery_token:
+            # Token matches: set new password directly
+            user.set_password(new_password)
+            db.session.commit()
+            flash('Password successfully reset! You can now sign in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            # Validation failed
+            flash('Validation failed. Check your username/email and recovery token.', 'danger')
+            return redirect(url_for('recover_password'))
             
-    # GET: Initial request, show form to enter username
-    return render_template('recover_password.html', stage='username')
+    # GET: Render the simple recovery form 
+    return render_template('recover_password.html')
 
 
 @app.route('/about')
@@ -362,11 +326,13 @@ def about():
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
+    # Note: We keep the POST method logic but remove the mail.send part
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         message_content = request.form['message']
         
+        # We assume the user still wants to collect data, but without sending an email
         flash('Your message has been received.', 'success')
         return redirect(url_for('contact'))
         
@@ -422,6 +388,7 @@ def delete_account():
     db.session.commit()
     logout_user()
     try:
+        # Removed mail.send logic
         flash(f"Account for {username} successfully deleted.", 'success')
     except Exception as e:
         flash(f"An error occurred: {e}", 'warning')
@@ -438,9 +405,10 @@ def app_context_scope():
             pass 
 
 with app_context_scope():
+    # Attempt to create tables if they do not exist (for fresh deployment)
     db.create_all()
 # --- END DB INITIALIZATION ---
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True) 
