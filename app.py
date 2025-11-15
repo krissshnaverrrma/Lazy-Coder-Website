@@ -325,21 +325,16 @@ def about():
 
 @app.route('/contact', methods=['GET', 'POST'])
 def contact():
+    # Note: We keep the POST method logic but remove the mail.send part
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
         message_content = request.form['message']
-        if not app.config.get('MAIL_USERNAME'):
-            flash('Email sending is not configured.', 'danger')
-            return render_template('contact.html')
-        try:
-            # Removed mail.send logic
-            flash('Your message has been sent, and a confirmation email is on its way!', 'success')
-            return redirect(url_for('contact'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'An error occurred while updating your profile: {e}', 'danger')
-            return redirect(url_for('edit_profile'))
+        
+        # We assume the user still wants to collect data, but without sending an email
+        flash('Your message has been received.', 'success')
+        return redirect(url_for('contact'))
+        
     return render_template('contact.html')
 
 @app.route('/profile')
