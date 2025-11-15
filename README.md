@@ -27,7 +27,7 @@ This project is structured for easy deployment to platforms like Render or Herok
 
 1.  Clone the repository:
     ```bash
-    git clone [YOUR_REPO_URL]
+    git clone [https://github.com/krissshnaverrrma/Lazy-Coder-Website.git]
     cd Lazy-Coder-Website
     ```
 2.  Create and activate a virtual environment:
@@ -79,4 +79,5 @@ itsdangerous
 Pillow
 gunicorn
 psycopg2-binary  # PostgreSQL driver
+
 ```eof
